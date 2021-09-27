@@ -1,18 +1,112 @@
-import os, shutil
+#!/usr/bin/env python3
+
+import os, shutil, subprocess, time
 from getpass import getpass
 import mysql.connector
-from lamp_helpers import *
- 
+
+WAIT_TIME = 0
+
+# ======================
+# Helper classes
+# ======================
+
+# Recursive chmod
+class chmod():
+    @classmethod
+    def chmod_rec(cls, path, mode):
+        for dirpath, dirnames, filenames in os.walk(path):
+            os.chmod(dirpath, mode)
+            for filename in filenames:
+                os.chmod(os.path.join(dirpath, filename), mode)
+
+# Wrapper for APT calls
+class apt():
+    @classmethod
+    def install(cls, package):
+        subprocess.call('apt install {} -y'.format(package), shell=True)
+
+    @classmethod
+    def remove(cls, package):
+        subprocess.call('apt remove {} -y'.format(package), shell=True)
+        subprocess.call('apt purge {} -y'.format(package), shell=True)
+
+    @classmethod
+    def autoremove(cls):
+        subprocess.call('apt autoremove -y', shell=True)
+
+    @classmethod
+    def update(cls):
+        subprocess.call('apt update', shell=True)
+
+    @classmethod
+    def upgrade(cls):
+        subprocess.call('apt upgrade -y', shell=True)
+
+    @classmethod
+    def add_source(cls, repo):
+        cls.install('software-properties-common')
+        subprocess.call('add-apt-repository {} -y'.format(repo), shell=True)
+
+# Wrapper for UFW calls
+class ufw():
+    @classmethod
+    def enable(cls):
+        subprocess.call('ufw enable', shell=True)
+
+    @classmethod
+    def reset(cls):
+        subprocess.call('ufw --force reset', shell=True)
+
+    @classmethod
+    def defaults(cls):
+        subprocess.call('ufw default deny incoming', shell=True)
+        subprocess.call('ufw default allow outgoing', shell=True)
+
+    @classmethod
+    def add(cls, port):
+        subprocess.call('ufw allow {}'.format(port), shell=True)
+
+# Wrapper for systemctl calls
+class systemctl():
+    @classmethod
+    def enable(cls, service):
+        subprocess.call('systemctl enable {}'.format(service), shell=True)
+
+    @classmethod
+    def start(cls, service):
+        subprocess.call('systemctl start {}'.format(service), shell=True)
+
+    @classmethod
+    def stop(cls, service):
+        subprocess.call('systemctl stop {}'.format(service), shell=True)
+
+    @classmethod
+    def restart(cls, service):
+        subprocess.call('systemctl restart {}'.format(service), shell=True)
+
+    @classmethod
+    def reload(cls, service):
+        subprocess.call('systemctl reload {}'.format(service), shell=True)
+
+# ======================
+# Script begins here
+# ======================
+
 # General system administration
 apt.update()
 apt.upgrade()
 ufw.enable()
 ufw.reset()
 
+time.sleep(WAIT_TIME)
+
 # Removes any pre-existing LAMP installation or LAMP components
 apt.remove('apache2')
 apt.remove('mysql-server')
 apt.remove('php*')
+apt.autoremove()
+
+time.sleep(WAIT_TIME)
 
 # Installs a full LAMP stack
 
@@ -20,12 +114,16 @@ apt.remove('php*')
 apt.add_source('ppa:ondrej/php')
 apt.update()
 
+time.sleep(WAIT_TIME)
+
 # Installing apache2
-apt.install('apache2 libapache2-mod-evasive libapache2-modsecurity')
+apt.install('apache2 libapache2-mod-evasive libapache2-mod-security2')
 ufw.add(80)
 ufw.add(443)
 systemctl.start('apache2')
 systemctl.enable('apache2')
+
+time.sleep(WAIT_TIME)
 
 mod_evasive = [
     '# $TFCName Script Entry - Apache2 ModEvasive Configuration $LogTime\n',
@@ -45,9 +143,11 @@ f = open('mod-evasive.conf', 'w+')
 f.writelines(mod_evasive)
 f.close()
 shutil.copy('mod-evasive.conf', '/etc/apache2/mods-available/')
-os.system('a2enmod mod-security')
-os.system('a2enmod mod-evasive')
+subprocess.call('a2enmod security2', shell=True)
+subprocess.call('a2enmod evasive', shell=True)
 systemctl.restart('apache2')
+
+time.sleep(WAIT_TIME)
 
 chmod.chmod_rec('/etc/apache2/conf/', 0o750)
 os.chmod('/usr/sbin/apache2', 0o511)
@@ -55,6 +155,8 @@ os.chmod('/var/log/apache2', 0o750)
 chmod.chmod_rec('/etc/apache2/conf-available/', 0o640)
 chmod.chmod_rec('/etc/apache2/conf-enabled/', 0o640)
 os.chmod('/etc/apache2/apache2.conf', 0o640)
+
+time.sleep(WAIT_TIME)
 
 for dirpath, dirnames, filenames in os.walk('/var/www/html/'):
     shutil.chown(dirpath, 'www-data', 'www-data')
@@ -74,52 +176,39 @@ f.writelines(apache_lines)
 f.close()
 shutil.copy('newserver.conf', '/etc/apache2/conf-available/')
 
-os.system('a2enconf newserver')
-os.system('a2dissite 00-default')
+time.sleep(WAIT_TIME)
+
+subprocess.call('a2enconf newserver', shell=True)
+subprocess.call('a2dissite 000-default', shell=True)
 systemctl.reload('apache2')
+
+time.sleep(WAIT_TIME)
 
 # Installing MySQL server
 apt.install('mysql-server')
-systemctl.start('mysqld')
-systemctl.enable('mysqld')
+systemctl.start('mysql')
+systemctl.enable('mysql')
 
-db = mysql.connector.connect(
-    host='localhost',
-    user='root',
-    password=''
-)
-db_cursor = db.cursor()
-db_cursor.execute('UPDATE mysql.user SET Password=PASSWORD(\'{}\') WHERE User=\'root\''.format(getpass('Enter new SQL root password: ')))
-db_cursor.execute('DELETE FROM mysql.user WHERE User=\'\'')
-db_cursor.execute('DELETE FROM mysql.user WHERE User=\'root\' AND Host NOT IN (\'localhost\', \'127.0.0.1\', \'::1\')')
-db_cursor.execute('DROP DATABASE test')
-db_cursor.execute('DELETE FROM mysql.db WHERE Db=\'test\' OR Db=\'test\\_%\'')
-db_cursor.execute('FLUSH PRIVILEGES')
+time.sleep(WAIT_TIME)
+
+#db = mysql.connector.connect(
+#    host='localhost',
+#    user='root',
+#    password=''
+#)
+#db_cursor = db.cursor()
+#db_cursor.execute('UPDATE mysql.user SET Password=PASSWORD(\'{}\') WHERE User=\'root\''.format(getpass('Enter new SQL root password: ')))
+#db_cursor.execute('DELETE FROM mysql.user WHERE User=\'\'')
+#db_cursor.execute('DELETE FROM mysql.user WHERE User=\'root\' AND Host NOT IN (\'localhost\', \'127.0.0.1\', \'::1\')')
+#db_cursor.execute('DROP DATABASE test')
+#db_cursor.execute('DELETE FROM mysql.db WHERE Db=\'test\' OR Db=\'test\\_%\'')
+#db_cursor.execute('FLUSH PRIVILEGES')
+
+time.sleep(WAIT_TIME)
 
 # Installing PHP 8.0
-apt.install('php8.0 libapache2-mod-php8.0 php8.0-mysql php-common php8.0-cli php8.0-common php8.0-json php8.0-opcache php8.0-readline')
-os.system('a2enmod php8.0')
+apt.install('php8.0 libapache2-mod-php8.0 php8.0-mysql php-common php8.0-cli php8.0-common php8.0-opcache php8.0-readline')
+subprocess.call('a2enmod php8.0', shell=True)
 systemctl.restart('apache2')
 
-# Adds service to systemctl and enables it upon startup
-service_lines = [
-    '[Unit]\n',
-    'Description=Service Management Script for LAMP stack\n',
-    'After=network.target\n',
-    '\n',
-    '[Service]\n',
-    'ExecStart=/usr/bin/python3 {}/maintenance.py\n'.format(os.getcwd()),
-    '\n',
-    '[Install]\n',
-    'WantedBy=multi-user.target'
-]
-
-f = open('lampscript.service','w+')
-f.writelines(service_lines)
-f.close()
-
-shutil.copy('lampscript.service', '/etc/systemd/system/')
-os.chmod("/etc/systemd/system/lampscript.service", 0o644)
-
-systemctl.enable('lampscript')
-systemctl.start('lampscript')
+print('Done!')
