@@ -189,20 +189,25 @@ apt.install('mysql-server')
 systemctl.start('mysql')
 systemctl.enable('mysql')
 
+
 time.sleep(WAIT_TIME)
 
-#db = mysql.connector.connect(
-#    host='localhost',
-#    user='root',
-#    password=''
-#)
-#db_cursor = db.cursor()
-#db_cursor.execute('UPDATE mysql.user SET Password=PASSWORD(\'{}\') WHERE User=\'root\''.format(getpass('Enter new SQL root password: ')))
-#db_cursor.execute('DELETE FROM mysql.user WHERE User=\'\'')
-#db_cursor.execute('DELETE FROM mysql.user WHERE User=\'root\' AND Host NOT IN (\'localhost\', \'127.0.0.1\', \'::1\')')
-#db_cursor.execute('DROP DATABASE test')
-#db_cursor.execute('DELETE FROM mysql.db WHERE Db=\'test\' OR Db=\'test\\_%\'')
-#db_cursor.execute('FLUSH PRIVILEGES')
+systemctl.stop('mysql')
+subprocess.call('mysql --skip-privileges &')
+db = mysql.connector.connect(
+    host='localhost',
+    user='root',
+    password=''
+)
+db_cursor = db.cursor()
+db_cursor.execute('UPDATE mysql.user SET Password=PASSWORD(\'{}\') WHERE User=\'root\''.format(getpass('Enter new SQL root password: ')))
+db_cursor.execute('DELETE FROM mysql.user WHERE User=\'\'')
+db_cursor.execute('DELETE FROM mysql.user WHERE User=\'root\' AND Host NOT IN (\'localhost\', \'127.0.0.1\', \'::1\')')
+db_cursor.execute('DROP DATABASE test')
+db_cursor.execute('DELETE FROM mysql.db WHERE Db=\'test\' OR Db=\'test\\_%\'')
+db_cursor.execute('FLUSH PRIVILEGES')
+systemctl.stop('mysql')
+systemctl.start('mysql')
 
 time.sleep(WAIT_TIME)
 
