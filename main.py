@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os, shutil, subprocess, time
+import os, shutil, subprocess, time, signal
 from getpass import getpass
 import mysql.connector
 
@@ -192,20 +192,24 @@ systemctl.enable('mysql')
 
 time.sleep(WAIT_TIME)
 
-systemctl.stop('mysql')
-subprocess.call('mysql --skip-grant-tables &')
+f = open('/var/lib/mysql/ubuntu.pid', 'r')
+mysqlpid = int(f.readline().strip('\n'))
+f.close()
+os.kill(mysqlpid, signal.SIGKILL)
+f = open('mysql_init', 'w+')
+f.write('ALTER USER \'root\'@\'localhost\' IDENTIFIED BY \'{}\''.format(getpass('Enter new MySQL root password: ')))
 db = mysql.connector.connect(
     host='localhost',
     user='root',
-    password=''
+    password=getpass('Enter MySQL root password: ')
 )
 db_cursor = db.cursor()
-db_cursor.execute('UPDATE mysql.user SET Password=PASSWORD(\'{}\') WHERE User=\'root\''.format(getpass('Enter new SQL root password: ')))
 db_cursor.execute('DELETE FROM mysql.user WHERE User=\'\'')
 db_cursor.execute('DELETE FROM mysql.user WHERE User=\'root\' AND Host NOT IN (\'localhost\', \'127.0.0.1\', \'::1\')')
 db_cursor.execute('DROP DATABASE test')
 db_cursor.execute('DELETE FROM mysql.db WHERE Db=\'test\' OR Db=\'test\\_%\'')
 db_cursor.execute('FLUSH PRIVILEGES')
+db.close()
 systemctl.stop('mysql')
 systemctl.start('mysql')
 
