@@ -193,7 +193,7 @@ systemctl.enable('mysql')
 time.sleep(WAIT_TIME)
 
 systemctl.stop('mysql')
-subprocess.call('mysql --skip-privileges &')
+subprocess.call('mysql --skip-grant-tables &')
 db = mysql.connector.connect(
     host='localhost',
     user='root',
