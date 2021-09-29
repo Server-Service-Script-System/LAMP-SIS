@@ -199,7 +199,7 @@ os.kill(mysqlpid, signal.SIGKILL)
 f = open('mysql_init', 'w+')
 f.write('ALTER USER \'root\'@\'localhost\' IDENTIFIED BY \'{}\''.format(getpass('Enter new MySQL root password: ')))
 f.close()
-subprocess.call('mysqld --init-file={}\\mysql_init &')
+subprocess.call('mysqld --init-file={}\mysql_init &'.format(os.getcwd()))
 db = mysql.connector.connect(
     host='localhost',
     user='root',
