@@ -1,10 +1,10 @@
-# LAMP Stack Service Management Script
+# LAMP Stack Server Installation Script
 
-The LAMP Stack Service Management Script (LAMP-SMS) performs a complete install of a LAMP stack on a Debian-based Linux distribution.
+The LAMP Stack Service Installation Script (LAMP-SIS) performs a complete install of a LAMP stack on a Debian-based Linux distribution.
 
 Created by Clemence J. Yi
 
-This SMS is current as of 9/26/2021.
+This SIS is current as of 9/26/2021.
 
 ## Installation
 
@@ -20,4 +20,4 @@ Pull requests are welcome. Please be descriptive in what changes you are making.
 
 ## License
 
-This SMS is protected under the GNU GPLv3 license.
+This SIS is protected under the GNU GPLv3 license.
