@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os, shutil, subprocess, time, signal
+from subprocess import Popen
 from getpass import getpass
 import mysql.connector
 
@@ -200,7 +201,8 @@ f = open('mysql_init', 'w+')
 f.write('ALTER USER \'root\'@\'localhost\' IDENTIFIED BY \'{}\''.format(getpass('Enter new MySQL root password: ')))
 f.close()
 shutil.chown('mysql_init', 'mysql')
-subprocess.call('/bin/mysqld --init-file={}/mysql_init &'.format(os.getcwd()))
+#subprocess.call('/bin/mysqld --init-file={}/mysql_init &'.format(os.getcwd()))
+Popen(['mysqld', '--init-file={}/mysql_init'.format(os.getcwd()), '&'])
 db = mysql.connector.connect(
     host='localhost',
     user='root',
