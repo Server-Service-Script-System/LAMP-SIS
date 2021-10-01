@@ -173,6 +173,7 @@ systemctl.reload('apache2')
 apt.install('mysql-server')
 systemctl.start('mysql')
 systemctl.enable('mysql')
+subprocess.call('mysql_secure_installation', shell=True)
 
 # Installing PHP 8.0
 apt.install('php8.0 libapache2-mod-php8.0 php8.0-mysql php-common php8.0-cli php8.0-common php8.0-opcache php8.0-readline')
